@@ -1,0 +1,13 @@
+# Generated reports
+/tmp/claudit-report.html
+*.html
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
