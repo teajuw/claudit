@@ -6,6 +6,10 @@ A Claude Code skill that audits your `~/.claude/` configuration and generates an
 
 Claude Code silently configures settings, skills, plugins, MCP servers, memory, and CLAUDE.md prompts across `~/.claude/`. Over time, you lose track of what's active, what's eating your context window, and what might be a security risk.
 
+## Screenshot
+
+![Claudit Overview](assets/screenshot.png)
+
 ## What You Get
 
 Run `/claudit` in any Claude Code session. It reads your config files and generates a self-contained HTML dashboard:
