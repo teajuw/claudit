@@ -14,7 +14,7 @@ When the user runs `/claudit`, follow these steps exactly:
 
 ### Step 1: Read all configuration files
 
-Read the following files in parallel. If a file doesn't exist, skip it gracefully.
+Read the following files in parallel. If a file or directory doesn't exist, skip it gracefully — many users won't have all of these. The only guaranteed file is `~/.claude/settings.json`. Show "none found" in the dashboard for any empty section rather than omitting the tab.
 
 **Core settings:**
 - `~/.claude/settings.json`
@@ -85,11 +85,18 @@ Write a single self-contained HTML file to `/tmp/claudit-report.html`. The file 
 
 **Layout:**
 - Header: "CLAUDIT" title + subtitle "Claude Code Configuration Audit"
-- Horizontal tab bar: Config | Skills | Plugins | MCP | Memory | CLAUDE.md
+- Horizontal tab bar: **Overview** | Config | Skills | Plugins | MCP | Memory | CLAUDE.md
 - Content area below tabs — switches on tab click
-- "Run Full Report" button in top-right corner — toggles report sections
+- **Overview is the default tab** — shows context budget bar, health audit, and optimization suggestions
 
-**Tab contents (default view — lightweight inventory):**
+**Overview tab (default):**
+- **Context Budget** — stacked horizontal color-coded bar chart at the top. This is the hero element.
+  - Each segment proportional to token count. Colors: green=CLAUDE.md, purple=Skills, orange=System reminders, gray=Settings, blue=Memory, dark=Available
+  - **Bar segments are clickable** — clicking a segment navigates to the corresponding detail tab (e.g., click CLAUDE.md segment → CLAUDE.md tab). Show "view →" hint on hover.
+  - **Legend items are also clickable** — same navigation behavior
+  - Implementation: CSS flexbox, each child div gets `flex-grow` proportional to tokens. `onclick` calls `go('tabname')`.
+- **Health Audit** — severity-rated warnings below the bar
+- **Optimize Suggestions** — actionable recommendations below health
 
 **Config tab:**
 - Display each setting from settings.json as a labeled row
@@ -112,7 +119,7 @@ Write a single self-contained HTML file to `/tmp/claudit-report.html`. The file 
 - Show timestamp of last auth attempt
 
 **Memory tab:**
-- Group by project (decode path-encoded names like `-Users-teajuw-projects-foo` to `/Users/teajuw/projects/foo`)
+- Group by project (decode path-encoded directory names by replacing leading `-` with `/` and internal `-` that follow a `/` with `/`, e.g., `-Users-john-projects-myapp` → `/Users/john/projects/myapp`)
 - For each project: show memory file count and a brief summary of topics covered
 - Do NOT dump raw memory content
 
@@ -120,11 +127,7 @@ Write a single self-contained HTML file to `/tmp/claudit-report.html`. The file 
 - Render the global `~/.claude/CLAUDE.md` content with basic HTML formatting
 - If project-level CLAUDE.md files exist, list them below with their project path
 
-**Full Report sections (hidden by default, revealed by "Run Full Report" button):**
-
-When the button is clicked, toggle a CSS class that reveals these additional sections:
-
-**Health Audit** — appears as a banner/section at the top of the page:
+**Health Audit** (on Overview tab, below context bar):
 - Check `permissions.defaultMode` === "bypassPermissions" → CRITICAL badge
 - Check `skipDangerousModePermissionPrompt` === true → CRITICAL badge
 - Check if permission allowlist contains `sudo` → HIGH badge
@@ -132,64 +135,47 @@ When the button is clicked, toggle a CSS class that reveals these additional sec
 - Check blocked plugins count → INFO badge
 - Badge colors: CRITICAL = `--danger`, HIGH = `--warning`, MEDIUM = yellow (#e3b341), INFO = `--accent`
 
-**Context Budget** — appears as a section below Health:
-- Single stacked horizontal bar chart showing all context contributors in one bar
-- Each segment is proportional to its token count
-- Color coding:
-  - `#58a6ff` (blue) — Memory files
-  - `#d29922` (orange) — System reminders (estimated)
-  - `#3fb950` (green) — CLAUDE.md files
-  - `#bc8cff` (purple) — Skill descriptions
-  - `#484f58` (gray) — Settings
-  - `#21262d` (dark) — Available/remaining context
-- Below the bar: legend with color swatches and token counts
-- Label: "Context Overhead (estimated, ±20%)" with total token count
-- Implementation: CSS flexbox container, each child div gets `flex-grow` proportional to token count. Hover shows tooltip with exact count.
-
-**Optimize Suggestions** — appears below Context Budget:
+**Optimize Suggestions** (on Overview tab, below health):
 - If memory exceeds 500 tokens: "Consider trimming MEMORY.md — currently ~N tokens"
 - If `bypassPermissions` enabled: "Consider switching to scoped permission allows for better security"
 - If `sudo` in allowlist: "Consider restricting sudo to specific commands instead of wildcard"
 - If blocked plugins exist: "Review blocked plugins — are the blocks still needed?"
 - If no backups found or stale: "Consider enabling regular backups"
 
-#### HTML structure:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claudit — Config Audit</title>
-  <style>
-    /* All CSS here — dark theme, tabs, cards, bar chart, badges */
-  </style>
-</head>
-<body>
-  <header><!-- Title, subtitle, Run Full Report button --></header>
-  <nav><!-- Tab bar --></nav>
-  <main><!-- Tab content panels --></main>
-  <section class="report-section hidden"><!-- Health, Context, Optimize --></section>
-  <script>
-    // Tab switching logic
-    // Report toggle logic
-    // Tooltip logic for context bar
-  </script>
-</body>
-</html>
-```
-
 Keep the entire HTML under 300 lines. Clean, minimal, no bloat.
 
-### Step 5: Open the dashboard
+### Step 5: Progress updates and output
 
-After writing the file, run:
+**CRITICAL: Print progress updates as you work so the user knows it's not stuck.**
+
+Throughout Steps 1-4, print short status lines as you go:
+
+```
+Reading settings...
+Reading skills (5 found)...
+Reading plugins...
+Reading MCP config...
+Scanning 13 projects for memory files...
+Estimating context budget...
+Generating dashboard...
+```
+
+After writing the HTML file, open it:
 ```bash
 open /tmp/claudit-report.html
 ```
+(On Linux, use `xdg-open` instead of `open`. Check the platform first.)
 
-Then tell the user: "Dashboard opened in browser. Click 'Run Full Report' for health audit, context budget, and optimization suggestions."
+Then print the final message with a file link:
+
+```
+Dashboard opened in browser.
+
+File: /tmp/claudit-report.html
+Run /claudit again to refresh.
+```
+
+Always include the file path so the user can reopen it if the browser tab is closed.
 
 ## Important notes
 
@@ -197,4 +183,4 @@ Then tell the user: "Dashboard opened in browser. Click 'Run Full Report' for he
 - If the user wants to see updated data, they should run `/claudit` again
 - NEVER include credentials, tokens, passwords, or secrets in the generated HTML
 - The HTML file is written to /tmp and is ephemeral — it will be cleaned up by the OS
-- If on Linux, use `xdg-open` instead of `open`. Check the platform first.
+- Print progress updates during each step so the user has transparency into what's happening
