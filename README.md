@@ -38,11 +38,11 @@ Run `/claudit` in any Claude Code session. It reads your config files and genera
 ## Install
 
 ```bash
-# Clone the repo
-git clone https://github.com/teajuw/claudit.git
+# Clone into your projects directory
+git clone https://github.com/teajuw/claudit.git ~/projects/claudit
 
 # Copy the skill to your Claude skills directory
-cp -r claudit/skills/claudit ~/.claude/skills/claudit
+cp -r ~/projects/claudit/skills/claudit ~/.claude/skills/claudit
 ```
 
 Or manually: copy the `skills/claudit/` folder into `~/.claude/skills/`.
@@ -52,8 +52,11 @@ That's it. No dependencies, no build step, no configuration.
 ## Usage
 
 ```
-/claudit
+/claudit                    # audit from current directory
+/claudit ~/projects/myapp   # audit a specific project
 ```
+
+The optional path argument changes which project's memory and CLAUDE.md are shown in the context budget. Global config (settings, skills, plugins, MCP) is always the same — it's the project-specific overhead that changes.
 
 The skill will:
 1. Print progress updates as it reads your config files
@@ -97,6 +100,8 @@ The stacked bar chart estimates how much of your context window is consumed by c
 - **System reminders** — auto-injected by Claude Code (~400 tok estimated)
 - **Settings** — configuration injection
 - **Memory** — project-specific MEMORY.md files (varies by project)
+
+The dashboard detects your active model (Opus 4.6, Sonnet 4.6, Haiku 4.5) and shows context usage as a percentage of the model's actual token limit (1M for Opus 1M, 200K for standard models).
 
 Token estimation uses a word count × 1.3 heuristic (±20% accuracy).
 
